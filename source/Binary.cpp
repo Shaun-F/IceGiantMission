@@ -334,7 +334,7 @@ high_prec_t Binary::FisherElement(params& myParams, ParameterVariables var1, Par
 }
 
 
-void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, int numOfThreads=0){
+void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, high_prec_t &LISA_SNR, int numOfThreads=0){
   //parallely calculate elements of fisher matrix
 
   int maxThreads{};
@@ -354,7 +354,6 @@ void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, int numOfThrea
   std::cout << "Number nested threads: " << numNestedThreads <<std::endl;
 
   //Pre-compute LISA Snr
-  high_prec_t LISA_SNR;
   { //localize tempParams to code block. Gets destroyed after codeblock
     params tempParams = myParams;
     tempParams.mission="LISA";

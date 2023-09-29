@@ -126,7 +126,8 @@ void executeAnalysis(params& myParams, Binary& myBinary, json& jobj){
 
 	//generate the fisher matrix
 	std::cout << "Generating fisher matrix for "<<myParams.mission<<" mission..."<<std::endl;
-	myBinary.genFisherMatrix(myParams, myFisherMatrix, (int)omp_get_max_threads());
+	high_prec_t LISA_SNR;
+	myBinary.genFisherMatrix(myParams, myFisherMatrix,LISA_SNR, (int)omp_get_max_threads());
 	myFisherMatrix.calculateInverse();
 	std::cout << "Fisher matrix generated in " << myTimer.elapsed() << " seconds." << std::endl;
 
@@ -162,16 +163,8 @@ void executeAnalysis(params& myParams, Binary& myBinary, json& jobj){
 		relUnc.push_back(sqrt(CovarianceMatrixDiag[i])/myParameters[i]);
 	};
 
-	//compute the SNR for LISA
-	//use the fact dh/d(ln(A)) = h, allowing us to reuse the FisherElement function	
-	myParams.mission="LISA";
-	std::cout << "Computing SNR for LISA" << std::endl;
-	double strainIntegral { (double)myBinary.FisherElement(myParams, ParameterVariables::lnA, ParameterVariables::lnA, omp_get_max_threads()) };
-	double SNR { sqrt(strainIntegral) };
-	jobj[std::to_string(myParams.P)][myParams.mission]["SNR"] = SNR;
 
-	
-
+	jobj[std::to_string(myParams.P)][myParams.mission]["SNR"] = LISA_SNR;
 	jobj[std::to_string(myParams.P)][myParams.mission]["fisherMatrix"] = myMatrixData;
 	jobj[std::to_string(myParams.P)][myParams.mission]["varianceMatrix"] = myInverseData;
 	jobj[std::to_string(myParams.P)][myParams.mission]["relativeUncertainties"] = relUnc;
@@ -184,7 +177,7 @@ void combineInformation(params& myParams, analysisParams& AnalysisParams, Binary
 
 	//calculate total SNR
 	double LISASNR {jobj[std::to_string(myParams.P)]["LISA"]["SNR"].template get<double>() };
-	double totalSNR = sqrt(1+AnalysisParams.relativeSNR*AnalysisParams.relativeSNR) * LISASNR;
+	double totalSNR = sqrt(1+myParams.relativeSNR*myParams.relativeSNR) * LISASNR;
 
 	FisherMatrix TotalMatrix{ FisherMatrixSize };
 
@@ -279,6 +272,8 @@ void getParameters(params& out, const std::string_view fileName){
 	out.periodSamples	= pt.get("parameters.periodSamples", 35);	
 	out.PSDlevel		= pt.get("parameters.PSDlevel", 9e-26);
 	out.allanDeviation	= pt.get("parameters.allanDeviation", 3e-15);
+	out.relativeSNR		= pt.get("parameters.relativeSNR", 1e-1);
+
 }
 
 void getAnalysisParameters(analysisParams& out, const std::string_view fileName){
@@ -293,7 +288,6 @@ void getAnalysisParameters(analysisParams& out, const std::string_view fileName)
 	boost::property_tree::ini_parser::read_ini(dataPath, pt); //parse the ini file
 
 	out.PeriodList		= to_array<high_prec_t>(pt.get<std::string>("analysis.PeriodList"));
-	out.relativeSNR		= pt.get("analysis.relativeSNR", 1e-1);
 }
 
 void printParameters(const params& myParams){
@@ -319,7 +313,8 @@ void printParameters(const params& myParams){
 						"\nderivativeDelta: " + std::to_string(myParams.DerivativeDelta) + 
 						"\nig_direction: " + std::to_string(myParams.ig_direction) + 
 						"\nlightTwoWayTime: " + std::to_string(myParams.lightTwoWayTime) +
-						"\nperiodSamples: " + std::to_string(myParams.periodSamples) 	
+						"\nperiodSamples: " + std::to_string(myParams.periodSamples) 	+
+						"\nrelativeSNR: " + std::to_string(myParams.relativeSNR)
 					};
 
 	std::cout << header + header + header << out << "\n" <<footer + footer + footer << std::endl;
@@ -332,7 +327,6 @@ void printAnalysisParameters(const analysisParams& anPars){
 	for (auto el: anPars.PeriodList){
 		out += std::to_string(el) + ", ";
 	}
-	out += "}\nrelativeSNR: " + std::to_string(anPars.relativeSNR);
 
 	std::cout << header + header + header << out << "\n" <<footer + footer + footer << std::endl;
 }

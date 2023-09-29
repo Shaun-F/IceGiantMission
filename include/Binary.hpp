@@ -51,13 +51,8 @@ public:
   high_prec_t FisherElement(params&, ParameterVariables, ParameterVariables, int);
   //static high_prec_t Integrand(high_prec_t, void*);
 
-  void genFisherMatrix(params&, FisherMatrix&, int);
+  void genFisherMatrix(params&, FisherMatrix&, high_prec_t&, int);
 
-  // Analytic equations for strain derivatives:
-  //high_prec_t dh_dThetaS(params&, high_prec_t);
-  //high_prec_t dh_dPhiS(params&, high_prec_t);
-  //high_prec_t dh_dThetaL(params&, high_prec_t);
-  //high_prec_t dh_dPhiL(params&, high_prec_t);
 
 
 
