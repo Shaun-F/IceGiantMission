@@ -106,6 +106,21 @@ high_prec_t ArcTan(high_prec_t x){
   return atan(x);
 }
 
+high_prec_t cassiniPSD(params& myParams, high_prec_t freq){
+  high_prec_t result;
+  high_prec_t PSDlevel { myParams.PSDlevel };
+  high_prec_t alpha1 { -2 };
+  high_prec_t alpha2 { -1./2. };
+  high_prec_t alpha3 { 2 };
+  high_prec_t f1 { 7.07e-5 };
+  high_prec_t f2 { 2.5e-5 };
+  high_prec_t f3 { 7.95e-1 };
+
+  result = PSDlevel * ( std::pow(freq/f1, alpha1) + std::pow(freq/f2, alpha2) + std::pow(freq/f3, alpha3) );
+
+  return result;
+};
+
 std::string paramVarToString(ParameterVariables var){
   std::string output{};
   switch(var){
@@ -224,6 +239,73 @@ std::vector<std::vector<high_prec_t>> fourierTransform(std::vector<high_prec_t> 
   //return fft
   return output;
 }
+
+
+double& FisherMatrix::operator()(unsigned x, unsigned y){ 
+  return m_matrix(x,y);
+};
+
+void FisherMatrix::operator*(double val){
+  m_matrix *= val; 
+  if (m_inverseCalculated){
+    calculateInverse();
+  }
+};
+
+
+void FisherMatrix::printInverse(){
+	  if (!m_inverseCalculated){
+	    calculateInverse();
+	  };
+	  std::cout << m_inverse << std::endl;
+	};
+
+std::vector<std::vector<double>> FisherMatrix::matrixRaw(){
+		std::vector<std::vector<double>> rawData;
+		rawData.resize(Rows);
+		for (auto& el: rawData){
+			el.resize(Cols);
+		};
+
+		for (int row{0}; row<Rows; ++row){
+			for(int col{0}; col<Cols; ++col){
+				rawData[row][col] = m_matrix(row,col);
+			};
+		};
+		return rawData;
+	};
+
+std::vector<std::vector<double>> FisherMatrix::errorsRaw(){
+		std::vector<std::vector<double>> rawData;
+		rawData.resize(Rows);
+		for (auto& el: rawData){
+			el.resize(Cols);
+		};
+
+		for (int row{0}; row<Rows; ++row){
+			for(int col{0}; col<Cols; ++col){
+				rawData[row][col] = m_errors(row,col);
+			};
+		};
+		return rawData;
+	};
+
+
+std::vector<std::vector<double>> FisherMatrix::inverseRaw(){
+		assert(m_inverseCalculated);
+		std::vector<std::vector<double>> rawData;
+		rawData.resize(Rows);
+		for (auto& el: rawData){
+			el.resize(Cols);
+		};
+
+		for (int row{0}; row<Rows; ++row){
+			for(int col{0}; col<Cols; ++col){
+				rawData[row][col] = m_inverse(row,col);
+			};
+		};
+		return rawData;
+	};
 
 //constructor
 /*

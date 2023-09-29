@@ -233,6 +233,11 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
 high_prec_t Binary::FisherElement(params& myParams, ParameterVariables var1, ParameterVariables var2, int numThreads=1){
   high_prec_t totalResult {0}; //result container, zero initialized
   int periodSamples { myParams.periodSamples };
+  auto integrand {
+		  [&](high_prec_t time)->high_prec_t {
+			  return this->dStrain(myParams, var1, time) * this->dStrain(myParams, var2, time); 
+		  }
+	  };
   //perform integration
   auto function1{
     [&](high_prec_t time) -> high_prec_t {
@@ -310,43 +315,16 @@ high_prec_t Binary::FisherElement(params& myParams, ParameterVariables var1, Par
     };
 
   } else if (myParams.mission=="IceGiant"){
-    
     //array of start values in units of years
     std::array<high_prec_t, 10> startTimes { 0., 10./9., 20./9., 30./9., 40./9., 50./9., 60./9., 70./9., 80./9., 90./9. };
-
     high_prec_t Nsamples { 40.*Constants::day * myParams.freqGW * periodSamples };
-    high_prec_t dx { (high_prec_t)40.*Constants::day/Nsamples};
-
     
     //iterate over start times. 10 40-day observation windows
     for (auto& stime: startTimes){
       stime *= Constants::yr; //convert to seconds
-      //compute input arrays
-      std::vector<high_prec_t> input1 { sampleFunction(function1, stime, stime + 40.*Constants::day, Nsamples, numThreads) };
-      std::vector<high_prec_t> input2 { sampleFunction(function2, stime, stime + 40.*Constants::day, Nsamples, numThreads) };
-
-      //caluclate ffts of input arrays
-      std::vector<std::vector<high_prec_t>> fft1 { fourierTransform(input1, numThreads) };
-      std::vector<std::vector<high_prec_t>> fft2 { fourierTransform(input2, numThreads) };
-
-      //compute integrand by multiplying ffts together
-      std::vector<high_prec_t> realPart{};
-      std::vector<high_prec_t> complexPart{};
-      for (int i{0}; i<Nsamples; ++i){
-        realPart.push_back(fft1[i][0]*fft2[i][0] + fft1[i][1]*fft2[i][1]);
-        complexPart.push_back(fft1[i][1]*fft2[i][0] - fft1[i][0]*fft2[i][1]);
-      }
-
-      //compute integral
-      high_prec_t integral1 { myTrapSum(realPart, dx, numThreads) };
-      high_prec_t integral1c { myTrapSum(complexPart, dx, numThreads) };
-      if (integral1c>1e-10){
-        std::cout << "Complex part of integral: " << integral1c << std::endl;
-      }
-
-      totalResult += 2*integral1/1.;
-      
-    }; //end of starttimes iteration
+      high_prec_t Integral { myTrapIntegral(integrand, stime, stime + 40.*Constants::day, Nsamples, numThreads) };
+      totalResult += Integral;
+    };
 
   } else {
     assert(("ERROR: Mission parameter not recognized", false));
@@ -358,6 +336,7 @@ high_prec_t Binary::FisherElement(params& myParams, ParameterVariables var1, Par
 
 void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, int numOfThreads=0){
   //parallely calculate elements of fisher matrix
+
   int maxThreads{};
   if (numOfThreads==0){
     maxThreads = (int)(omp_get_max_threads());
@@ -374,6 +353,32 @@ void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, int numOfThrea
   std::cout << "Number outer threads: " << numThreads <<std::endl;
   std::cout << "Number nested threads: " << numNestedThreads <<std::endl;
 
+  //Pre-compute LISA Snr
+  high_prec_t LISA_SNR;
+  { //localize tempParams to code block. Gets destroyed after codeblock
+    params tempParams = myParams;
+    tempParams.mission="LISA";
+    high_prec_t Nsamples { tempParams.Tobs * tempParams.freqGW * tempParams.periodSamples };
+    LISA_SNR = std::sqrt((2./sN(myParams.freqGW))*myTrapIntegral( [&](high_prec_t t)->high_prec_t {
+                                                  return this->strain(tempParams, t) * this->strain(tempParams,t);
+                                                },
+                                              0, tempParams.Tobs, Nsamples, maxThreads));
+  };
+
+  //if executing IceGiant fisher matrix, compute int h(t) h(t) dt
+  high_prec_t IceGiantWaveformNorm;
+  if (myParams.mission=="IceGiant"){
+    std::array<high_prec_t, 10> startTimes { 0., 10./9., 20./9., 30./9., 40./9., 50./9., 60./9., 70./9., 80./9., 90./9. };
+    high_prec_t Nsamples { 40.*Constants::day * myParams.freqGW * myParams.periodSamples };
+    for (auto& stime: startTimes){
+      stime *= Constants::yr; //convert to seconds
+      IceGiantWaveformNorm = myTrapIntegral( [&](high_prec_t t)->high_prec_t {
+                                                  return this->strain(myParams, t) * this->strain(myParams,t);
+                                                },
+                                              stime, stime + 40.*Constants::day, Nsamples, maxThreads);
+    };
+  };
+
 	omp_set_nested(true); //allow nested parallelism. Important for parallelizing the individual integrations too
   #pragma omp parallel for num_threads(numThreads) collapse(2)
   for(unsigned int i=0; i<out.Rows; ++i){
@@ -383,7 +388,14 @@ void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, int numOfThrea
 
       //generate result
       high_prec_t result{ FisherElement(myParams, static_cast<ParameterVariables>(i), static_cast<ParameterVariables>(j), numNestedThreads) };
-      high_prec_t IntegrationResult { result };
+      high_prec_t IntegrationResult;
+      if (myParams.mission=="LISA"){
+       IntegrationResult = result;
+      } else if (myParams.mission=="IceGiant"){
+        IntegrationResult = (myParams.relativeSNR*LISA_SNR)*(myParams.relativeSNR*LISA_SNR)*result/IceGiantWaveformNorm;
+      } else {
+        assert(("Mission parameter not recognized", false));
+      }
       
       //add result and errors to output matrix and use symmetry of Fisher matrix to automatically populate symmetric indices
       out(i,j) = IntegrationResult;
@@ -521,3 +533,38 @@ std::vector<high_prec_t> Binary::FisherElement(params& myParams, ParameterVariab
   return {totalResult, totalError};
 }
 */
+
+
+/* //array of start values in units of years
+    std::array<high_prec_t, 10> startTimes { 0., 10./9., 20./9., 30./9., 40./9., 50./9., 60./9., 70./9., 80./9., 90./9. };
+
+    high_prec_t Nsamples { 40.*Constants::day * myParams.freqGW * periodSamples };
+    high_prec_t dx { (high_prec_t)40.*Constants::day/Nsamples};
+
+    
+    //iterate over start times. 10 40-day observation windows
+    for (auto& stime: startTimes){
+      
+      stime *= Constants::yr; //convert to seconds
+      //compute input arrays
+      std::vector<high_prec_t> input1 { sampleFunction(function1, stime, stime + 40.*Constants::day, Nsamples, numThreads) };
+      std::vector<high_prec_t> input2 { sampleFunction(function2, stime, stime + 40.*Constants::day, Nsamples, numThreads) };
+
+      //caluclate ffts of input arrays
+      std::vector<std::vector<high_prec_t>> fft1 { fourierTransform(input1, numThreads) };
+      std::vector<std::vector<high_prec_t>> fft2 { fourierTransform(input2, numThreads) };
+
+      //compute integrand by multiplying ffts together
+      std::vector<high_prec_t> realPart{};
+      std::vector<high_prec_t> complexPart{};
+      for (int i{0}; i<Nsamples; ++i){
+        realPart.push_back(fft1[i][0]*fft2[i][0] + fft1[i][1]*fft2[i][1]);
+        complexPart.push_back(fft1[i][1]*fft2[i][0] - fft1[i][0]*fft2[i][1]);
+      }
+
+      //compute integral
+      high_prec_t integral1 { myTrapSum(realPart, dx, numThreads) };
+      high_prec_t integral1c { myTrapSum(complexPart, dx, numThreads) };
+      if (integral1c>1e-10){
+        std::cout << "Complex part of integral: " << integral1c << std::endl;
+      }*/

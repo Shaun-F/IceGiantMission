@@ -126,7 +126,7 @@ void executeAnalysis(params& myParams, Binary& myBinary, json& jobj){
 
 	//generate the fisher matrix
 	std::cout << "Generating fisher matrix for "<<myParams.mission<<" mission..."<<std::endl;
-	myBinary.genFisherMatrix(myParams, myFisherMatrix, 1);
+	myBinary.genFisherMatrix(myParams, myFisherMatrix, (int)omp_get_max_threads());
 	myFisherMatrix.calculateInverse();
 	std::cout << "Fisher matrix generated in " << myTimer.elapsed() << " seconds." << std::endl;
 
@@ -134,7 +134,6 @@ void executeAnalysis(params& myParams, Binary& myBinary, json& jobj){
 
 	//calculate raw nested vectors from Eigen::MatrixXd objects
 	std::vector<std::vector<double>> myMatrixData{myFisherMatrix.matrixRaw()};
-	std::vector<std::vector<double>> myErrorsData{myFisherMatrix.errorsRaw()};
 	myFisherMatrix.calculateInverse();
 	std::vector<std::vector<double>> myInverseData{myFisherMatrix.inverseRaw()};
 
@@ -166,20 +165,14 @@ void executeAnalysis(params& myParams, Binary& myBinary, json& jobj){
 	//compute the SNR for LISA
 	//use the fact dh/d(ln(A)) = h, allowing us to reuse the FisherElement function	
 	myParams.mission="LISA";
-	std::cout << "Computing SNR" << std::endl;
+	std::cout << "Computing SNR for LISA" << std::endl;
 	double strainIntegral { (double)myBinary.FisherElement(myParams, ParameterVariables::lnA, ParameterVariables::lnA, omp_get_max_threads()) };
 	double SNR { sqrt(strainIntegral) };
-	jobj[std::to_string(myParams.P)][myParams.mission]["SNR"] = SNR;
-	myParams.mission="IceGiant";
-	std::cout << "Computing SNR" << std::endl;
-	strainIntegral = (double)myBinary.FisherElement(myParams, ParameterVariables::lnA, ParameterVariables::lnA, omp_get_max_threads());
-	SNR = sqrt(strainIntegral);
 	jobj[std::to_string(myParams.P)][myParams.mission]["SNR"] = SNR;
 
 	
 
 	jobj[std::to_string(myParams.P)][myParams.mission]["fisherMatrix"] = myMatrixData;
-	jobj[std::to_string(myParams.P)][myParams.mission]["integrationErrors"] = myErrorsData;
 	jobj[std::to_string(myParams.P)][myParams.mission]["varianceMatrix"] = myInverseData;
 	jobj[std::to_string(myParams.P)][myParams.mission]["relativeUncertainties"] = relUnc;
 };
@@ -200,10 +193,7 @@ void combineInformation(params& myParams, analysisParams& AnalysisParams, Binary
 		for (unsigned int col{0}; col<jobj[std::to_string(myParams.P)]["LISA"]["fisherMatrix"][row].size(); ++col){
 			double lisaElement { jobj[std::to_string(myParams.P)]["LISA"]["fisherMatrix"][row][col] };
 			double icegiantElement { jobj[std::to_string(myParams.P)]["IceGiant"]["fisherMatrix"][row][col] };
-			double lisaError { jobj[std::to_string(myParams.P)]["LISA"]["integrationErrors"][row][col] };
-			double icegiantError { jobj[std::to_string(myParams.P)]["IceGiant"]["integrationErrors"][row][col] };
 			TotalMatrix(row,col) = lisaElement + icegiantElement; //add fisher matrices elementwise
-			TotalMatrix.addError(sqrt(lisaError*lisaError + icegiantError*icegiantError), {row,col}); //add errors in quadruture
 		}
 	};
 
@@ -234,7 +224,6 @@ void combineInformation(params& myParams, analysisParams& AnalysisParams, Binary
 	};
 
 	jobj[std::to_string(myParams.P)]["Total"]["fisherMatrix"] = TotalMatrix.matrixRaw();
-	jobj[std::to_string(myParams.P)]["Total"]["integrationErrors"] = TotalMatrix.errorsRaw();
 	jobj[std::to_string(myParams.P)]["Total"]["relativeUncertainties"] = relUnc;
 	jobj[std::to_string(myParams.P)]["Total"]["varianceMatrix"] = TotalVariances;
 	jobj[std::to_string(myParams.P)]["Total"]["SNR"] = totalSNR;
@@ -288,6 +277,8 @@ void getParameters(params& out, const std::string_view fileName){
 	out.ig_direction	= pt.get("parameters.ig_direction", 0.);
 	out.lightTwoWayTime	= pt.get("parameters.lightTwoWayTime", 15000);
 	out.periodSamples	= pt.get("parameters.periodSamples", 35);	
+	out.PSDlevel		= pt.get("parameters.PSDlevel", 9e-26);
+	out.allanDeviation	= pt.get("parameters.allanDeviation", 3e-15);
 }
 
 void getAnalysisParameters(analysisParams& out, const std::string_view fileName){

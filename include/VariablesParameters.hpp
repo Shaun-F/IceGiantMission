@@ -27,7 +27,6 @@ enum class ParameterVariables{
 
 struct analysisParams{//struct containing analysis parameters
   std::vector<high_prec_t> PeriodList {0.01,0.03,0.05,0.07,0.09,0.1,0.3,0.5,0.7,0.9,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,20.,30.,40.,50.,60.,70.,80.,90. }; //list of CBP periods to iterate over
-  double relativeSNR{1e-1};
 };
 
 
@@ -63,6 +62,9 @@ struct params{ //struct containing parameters for specific system
   high_prec_t LineOfSightAngle{};
   high_prec_t lightTwoWayTime{}; //two way light travel time for doppler mission
   int periodSamples{35};
+  double PSDlevel{0};
+  double allanDeviation{0};
+  double relativeSNR{1e-1};
 };
 
 

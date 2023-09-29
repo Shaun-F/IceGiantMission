@@ -29,6 +29,8 @@ high_prec_t ArcTan(high_prec_t);
 
 std::string paramVarToString(ParameterVariables var);
 
+high_prec_t cassiniPSD(params&, high_prec_t);
+
 //timer class taken from --> https://www.learncpp.com/cpp-tutorial/timing-your-code/
 class Timer
 {
@@ -72,6 +74,9 @@ public:
 	//FisherMatrix constructor
 	FisherMatrix(unsigned int x): m_matrix(x,x), m_errors(x,x), m_inverse(x,x){Rows = x; Cols = x;};
 
+	//FisherMatrix constructor
+	FisherMatrix(MatrixXd matrix) {m_matrix << matrix;};
+
 	//FisherMatrix list constructor
 	//FisherMatrix(high_prec_t inputMatrix): m_matrix(inputMatrix){};
 
@@ -89,68 +94,26 @@ public:
 	void printMatrix() const { std::cout << m_matrix << std::endl;};
 	void printErrors() const { std::cout << m_errors << std::endl;};
 
-	//overload operator() to access matrix elements from class
-	double& operator()(unsigned x, unsigned y){ return m_matrix(x,y);};
-
 	//add to errors
 	void addError(double value, std::vector<unsigned int> location){m_errors(location[0], location[1])=value;};
 
 	//Calculate inverse
 	void calculateInverse(){ m_inverse = m_matrix.inverse(); m_inverseCalculated=true;};
 
+	//overload operator() to access matrix elements from class
+	double& operator()(unsigned x, unsigned y);
+
+	//overload multiplication operator
+	void operator*(double val);
+	
 	//print inverse if calculated. if not, first calculate, then print
-	void printInverse(){
-	  if (!m_inverseCalculated){
-	    calculateInverse();
-	  };
-	  std::cout << m_inverse << std::endl;
-	};
+	void printInverse();
 
-	std::vector<std::vector<double>> matrixRaw(){
-		std::vector<std::vector<double>> rawData;
-		rawData.resize(Rows);
-		for (auto& el: rawData){
-			el.resize(Cols);
-		};
+	std::vector<std::vector<double>> matrixRaw();
 
-		for (int row{0}; row<Rows; ++row){
-			for(int col{0}; col<Cols; ++col){
-				rawData[row][col] = m_matrix(row,col);
-			};
-		};
-		return rawData;
-	};
+	std::vector<std::vector<double>> errorsRaw();
 
-	std::vector<std::vector<double>> errorsRaw(){
-		std::vector<std::vector<double>> rawData;
-		rawData.resize(Rows);
-		for (auto& el: rawData){
-			el.resize(Cols);
-		};
-
-		for (int row{0}; row<Rows; ++row){
-			for(int col{0}; col<Cols; ++col){
-				rawData[row][col] = m_errors(row,col);
-			};
-		};
-		return rawData;
-	};
-
-	std::vector<std::vector<double>> inverseRaw(){
-		assert(m_inverseCalculated);
-		std::vector<std::vector<double>> rawData;
-		rawData.resize(Rows);
-		for (auto& el: rawData){
-			el.resize(Cols);
-		};
-
-		for (int row{0}; row<Rows; ++row){
-			for(int col{0}; col<Cols; ++col){
-				rawData[row][col] = m_inverse(row,col);
-			};
-		};
-		return rawData;
-	};
+	std::vector<std::vector<double>> inverseRaw();
 };
 
 /*
