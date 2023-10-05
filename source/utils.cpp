@@ -159,6 +159,9 @@ std::string paramVarToString(ParameterVariables var){
   return output;
 };
 
+
+#ifdef COMPILE_AS_PROGRAM
+
 high_prec_t myTrapSum(std::vector<high_prec_t>& arr, high_prec_t dx, int numThreads=1){
     
     high_prec_t integrationResult { 2*std::reduce(++arr.cbegin(), --arr.cend()) };
@@ -241,6 +244,7 @@ std::vector<std::vector<high_prec_t>> fourierTransform(std::vector<high_prec_t> 
 }
 
 
+
 double& FisherMatrix::operator()(unsigned x, unsigned y){ 
   return m_matrix(x,y);
 };
@@ -252,12 +256,11 @@ void FisherMatrix::operator*(double val){
   }
 };
 
-
 void FisherMatrix::printInverse(){
 	  if (!m_inverseCalculated){
 	    calculateInverse();
 	  };
-	  std::cout << m_inverse << std::endl;
+	  std::cout << m_inverse << "\n";
 	};
 
 std::vector<std::vector<double>> FisherMatrix::matrixRaw(){
@@ -290,7 +293,6 @@ std::vector<std::vector<double>> FisherMatrix::errorsRaw(){
 		return rawData;
 	};
 
-
 std::vector<std::vector<double>> FisherMatrix::inverseRaw(){
 		assert(m_inverseCalculated);
 		std::vector<std::vector<double>> rawData;
@@ -306,6 +308,8 @@ std::vector<std::vector<double>> FisherMatrix::inverseRaw(){
 		};
 		return rawData;
 	};
+
+#endif //COMPILE_AS_PROGRAM
 
 //constructor
 /*

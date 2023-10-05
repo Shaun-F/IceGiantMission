@@ -23,10 +23,10 @@ void LISA::LoadTransfer(std::string file_name, std::vector<std::vector<high_prec
   std::ifstream TransferFile{file_name};
 
   if (!TransferFile) { //if transfer file fails to open, set flag
-    std::cout << "Warning: Transfer data failed to load at " << file_name << " . Setting NUMERICALTRANSFERDATA_SUCCESS flag to false and using analytic approximations." <<std::endl;
+    std::cout << "Warning: Transfer data failed to load at " << file_name << " . Setting NUMERICALTRANSFERDATA_SUCCESS flag to false and using analytic approximations." <<"\n";
     m_NUMERICALTRANSFERDATA_SUCCESS = false; //failed to load file
   } else { //file successfully opened
-    std::cout << "Successfully loaded Transfer Data"<<std::endl;
+    std::cout << "Successfully loaded Transfer Data"<<"\n";
     m_NUMERICALTRANSFERDATA_SUCCESS = true; //successfully loaded file
 
 

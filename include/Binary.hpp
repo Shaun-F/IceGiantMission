@@ -47,13 +47,15 @@ public:
   high_prec_t psiBar(params&, high_prec_t);
   high_prec_t dPsiBar(params&, high_prec_t);
 
+  #ifdef COMPILE_AS_PROGRAM
+  
   //generate fisher matrix
   high_prec_t FisherElement(params&, ParameterVariables, ParameterVariables, int);
   //static high_prec_t Integrand(high_prec_t, void*);
 
   void genFisherMatrix(params&, FisherMatrix&, high_prec_t&, int);
 
-
+  #endif //COMPILE_AS_PROGRAM
 
 
 };

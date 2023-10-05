@@ -163,7 +163,7 @@ void executeAnalysis(params& myParams, Binary& myBinary, json& jobj){
 		relUnc.push_back(sqrt(CovarianceMatrixDiag[i])/myParameters[i]);
 	};
 
-
+	jobj[std::to_string(myParams.P)][myParams.mission]["Parameters"] = myParameters;
 	jobj[std::to_string(myParams.P)][myParams.mission]["SNR"] = LISA_SNR;
 	jobj[std::to_string(myParams.P)][myParams.mission]["fisherMatrix"] = myMatrixData;
 	jobj[std::to_string(myParams.P)][myParams.mission]["varianceMatrix"] = myInverseData;

@@ -7,7 +7,6 @@
 #include <chrono> // for std::chrono functions
 #include <vector>
 #include <string>
-#include <eigen3/Eigen/Dense> //for matricies and related methods
 #include <functional>
 using namespace std;
 
@@ -55,6 +54,9 @@ public:
 
 
 
+#ifdef COMPILE_AS_PROGRAM
+#include <eigen3/Eigen/Dense> //for matricies and related methods
+
 using Eigen::MatrixXd;
 class FisherMatrix{
 private:
@@ -91,8 +93,8 @@ public:
 		return m_inverse;
 	}
 
-	void printMatrix() const { std::cout << m_matrix << std::endl;};
-	void printErrors() const { std::cout << m_errors << std::endl;};
+	void printMatrix() const { std::cout << m_matrix << "\n";};
+	void printErrors() const { std::cout << m_errors << "\n";};
 
 	//add to errors
 	void addError(double value, std::vector<unsigned int> location){m_errors(location[0], location[1])=value;};
@@ -116,39 +118,13 @@ public:
 	std::vector<std::vector<double>> inverseRaw();
 };
 
-/*
-class Parameters{
-	public:
-		std::string m_mission;
-		double m_thetaL;
-		high_prec_t m_phiL {};
-		high_prec_t m_thetaS {};
-		high_prec_t m_phiS {};
-		high_prec_t m_M1 {};
-		high_prec_t m_M2 {};
-		high_prec_t m_MP {};
-		high_prec_t m_Tobs {};
-		high_prec_t m_Larm {};
-		high_prec_t m_NC {};
-		high_prec_t m_thetaP {};
-		high_prec_t m_phiP {};
-		char m_mode {};
-		high_prec_t m_freqGW {};
-		high_prec_t m_sourceDistance {};
-		high_prec_t m_ig_direction {};
-		int m_LISAAlpha {};
-		high_prec_t m_lightTwoWayTime {};
-		high_prec_t m_period {};
-
-}
-*/
 
 std::vector<high_prec_t> sampleFunction(std::function<high_prec_t(high_prec_t)>, high_prec_t, high_prec_t, int, int);
 high_prec_t myTrapSum(std::vector<high_prec_t>&, high_prec_t, int);
 high_prec_t myTrapIntegral(std::function<high_prec_t(high_prec_t)>, high_prec_t, high_prec_t, int, int);
 std::vector<std::vector<high_prec_t>> fourierTransform(std::vector<high_prec_t>, int);
 
-
+#endif //COMPILE_AS_PROGRAM
 
 
 #endif //UTILS_H_INCLUDED

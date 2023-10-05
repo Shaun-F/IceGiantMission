@@ -124,7 +124,7 @@ high_prec_t Binary::freqDeriv(params& params, ParameterVariables myVar, high_pre
       result = time*(1 - FrequencyK(params)*cos(2.*Constants::PI*time/params.P + params.phiP));
       break;
     default:
-      std::cout << "ERROR: variable not valid" << std::endl;
+      std::cout << "ERROR: variable not valid" << "\n";
       result = 0.0;
       break;
     };
@@ -151,7 +151,7 @@ high_prec_t Binary::freqDerivInt(params& params, ParameterVariables myVar, high_
       result = (1./2.)*time*time - (FrequencyK(params)*params.P/(4.*Constants::PI*Constants::PI))*(-params.P*cos(params.phiP) + params.P*cos(2.*Constants::PI*time/params.P + params.phiP) + 2*Constants::PI*time*sin(2.*Constants::PI*time/params.P + params.phiP));
       break;
     default:
-      std::cout << "ERROR: variable not valid" << std::endl;
+      std::cout << "ERROR: variable not valid" << "\n";
       result = 0.0;
       break;
     };
@@ -223,12 +223,14 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
       result = strain(myParams, time);
       break;
     default:
-      std::cout << "ERROR in dStrain. Specified variable not recognized." <<std::endl;
+      std::cout << "ERROR in dStrain. Specified variable not recognized." <<"\n";
       break;
   };
 
   return result;
 }
+
+#ifdef COMPILE_AS_PROGRAM
 
 high_prec_t Binary::FisherElement(params& myParams, ParameterVariables var1, ParameterVariables var2, int numThreads=1){
   high_prec_t totalResult {0}; //result container, zero initialized
@@ -252,67 +254,14 @@ high_prec_t Binary::FisherElement(params& myParams, ParameterVariables var1, Par
 
   if (myParams.mission=="LISA"){
     high_prec_t Nsamples { myParams.Tobs * myParams.freqGW * periodSamples };
-    high_prec_t dx { (high_prec_t)myParams.Tobs/Nsamples};
 
+    myParams.LISAAlpha = 1; //first beam pattern function
+    high_prec_t Integral1 { myTrapIntegral(integrand, 0., myParams.Tobs, Nsamples, numThreads) };
+    
+    myParams.LISAAlpha = 2; //second beam pattern function
+    high_prec_t Integral2 { myTrapIntegral(integrand, 0., myParams.Tobs, Nsamples, numThreads) };
 
-    /////////////////first beam pattern function
-    myParams.LISAAlpha = 1; 
-    { //create a code block to localize variables. temperary variables like input1/2, ffts get destroyed at end of codeblock
-      //compute input arrays
-      std::vector<high_prec_t> input1 { sampleFunction(function1, 0, myParams.Tobs, Nsamples, numThreads) };
-      std::vector<high_prec_t> input2 { sampleFunction(function2, 0, myParams.Tobs, Nsamples, numThreads) };
-
-      //caluclate ffts of input arrays
-      std::vector<std::vector<high_prec_t>> fft1 { fourierTransform(input1, numThreads) };
-      std::vector<std::vector<high_prec_t>> fft2 { fourierTransform(input2, numThreads) };
-
-      //compute integrand by multiplying ffts together
-      std::vector<high_prec_t> realPart{};
-      std::vector<high_prec_t> complexPart{};
-      for (int i{0}; i<Nsamples; ++i){
-        realPart.push_back(fft1[i][0]*fft2[i][0] + fft1[i][1]*fft2[i][1]);
-        complexPart.push_back(fft1[i][1]*fft2[i][0] - fft1[i][0]*fft2[i][1]);
-      };
-
-      //compute integral
-      high_prec_t integral1 { myTrapSum(realPart, dx, numThreads) };
-      high_prec_t integral1c { myTrapSum(complexPart, dx, numThreads) };
-      if (integral1c>1e-10){
-        std::cout << "Complex part of integral: " << integral1c << std::endl;
-      };
-
-      totalResult = 2*(integral1)/sN(myParams.freqGW);
-    };
-
-
-    /////////////////second beam pattern function
-    myParams.LISAAlpha = 2; 
-    { //create a code block to localize variables. temperary variables like input1/2, ffts get destroyed at end of codeblock
-      //compute input arrays
-      std::vector<high_prec_t> input21 { sampleFunction(function1, 0, myParams.Tobs, Nsamples, numThreads) };
-      std::vector<high_prec_t> input22 { sampleFunction(function2, 0, myParams.Tobs, Nsamples, numThreads) };
-
-      //caluclate ffts
-      std::vector<std::vector<high_prec_t>> fft21 { fourierTransform(input21, numThreads) };
-      std::vector<std::vector<high_prec_t>> fft22 { fourierTransform(input22, numThreads) };
-
-      //compute integrand
-      std::vector<high_prec_t> realPart2{};
-      std::vector<high_prec_t> complexPart2{};
-      for (int i{0}; i<Nsamples; ++i){
-        realPart2.push_back(fft21[i][0]*fft22[i][0] + fft21[i][1]*fft22[i][1]);
-        complexPart2.push_back(fft21[i][1]*fft22[i][0] - fft21[i][0]*fft22[i][1]);
-      }
-
-      //compute integral
-      high_prec_t integral2 { myTrapSum(realPart2, dx, numThreads) };
-      high_prec_t integral2c { myTrapSum(complexPart2, dx, numThreads) };
-      if (integral2c>1e-10){
-        std::cout << "Complex part of integral2: " << integral2c << std::endl;
-      }
-
-      totalResult += 2*(integral2)/sN(myParams.freqGW);
-    };
+    totalResult = 2*(Integral1 + Integral2)/sN(myParams.freqGW);
 
   } else if (myParams.mission=="IceGiant"){
     //array of start values in units of years
@@ -350,8 +299,8 @@ void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, high_prec_t &L
   if (numNestedThreads*numThreads != omp_get_max_threads() ){
     numNestedThreads = (int)omp_get_max_threads()/numThreads;
   }
-  std::cout << "Number outer threads: " << numThreads <<std::endl;
-  std::cout << "Number nested threads: " << numNestedThreads <<std::endl;
+  std::cout << "Number outer threads: " << numThreads <<"\n";
+  std::cout << "Number nested threads: " << numNestedThreads <<"\n";
 
   //Pre-compute LISA Snr
   { //localize tempParams to code block. Gets destroyed after codeblock
@@ -405,6 +354,71 @@ void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, high_prec_t &L
   };
 }
 
+#endif //COMPILE_AS_PROGRAM
+
+/* 
+    high_prec_t Nsamples { myParams.Tobs * myParams.freqGW * periodSamples };
+    high_prec_t dx { (high_prec_t)myParams.Tobs/Nsamples};
+
+
+    /////////////////first beam pattern function
+    myParams.LISAAlpha = 1; 
+    { //create a code block to localize variables. temperary variables like input1/2, ffts get destroyed at end of codeblock
+      //compute input arrays
+      std::vector<high_prec_t> input1 { sampleFunction(function1, 0, myParams.Tobs, Nsamples, numThreads) };
+      std::vector<high_prec_t> input2 { sampleFunction(function2, 0, myParams.Tobs, Nsamples, numThreads) };
+
+      //caluclate ffts of input arrays
+      std::vector<std::vector<high_prec_t>> fft1 { fourierTransform(input1, numThreads) };
+      std::vector<std::vector<high_prec_t>> fft2 { fourierTransform(input2, numThreads) };
+
+      //compute integrand by multiplying ffts together
+      std::vector<high_prec_t> realPart{};
+      std::vector<high_prec_t> complexPart{};
+      for (int i{0}; i<Nsamples; ++i){
+        realPart.push_back(fft1[i][0]*fft2[i][0] + fft1[i][1]*fft2[i][1]);
+        complexPart.push_back(fft1[i][1]*fft2[i][0] - fft1[i][0]*fft2[i][1]);
+      };
+
+      //compute integral
+      high_prec_t integral1 { myTrapSum(realPart, dx, numThreads) };
+      high_prec_t integral1c { myTrapSum(complexPart, dx, numThreads) };
+      if (integral1c>1e-10){
+        std::cout << "Complex part of integral: " << integral1c << "\n";
+      };
+
+      totalResult = 2*(integral1)/sN(myParams.freqGW);
+    };
+
+
+    /////////////////second beam pattern function
+    myParams.LISAAlpha = 2; 
+    { //create a code block to localize variables. temperary variables like input1/2, ffts get destroyed at end of codeblock
+      //compute input arrays
+      std::vector<high_prec_t> input21 { sampleFunction(function1, 0, myParams.Tobs, Nsamples, numThreads) };
+      std::vector<high_prec_t> input22 { sampleFunction(function2, 0, myParams.Tobs, Nsamples, numThreads) };
+
+      //caluclate ffts
+      std::vector<std::vector<high_prec_t>> fft21 { fourierTransform(input21, numThreads) };
+      std::vector<std::vector<high_prec_t>> fft22 { fourierTransform(input22, numThreads) };
+
+      //compute integrand
+      std::vector<high_prec_t> realPart2{};
+      std::vector<high_prec_t> complexPart2{};
+      for (int i{0}; i<Nsamples; ++i){
+        realPart2.push_back(fft21[i][0]*fft22[i][0] + fft21[i][1]*fft22[i][1]);
+        complexPart2.push_back(fft21[i][1]*fft22[i][0] - fft21[i][0]*fft22[i][1]);
+      }
+
+      //compute integral
+      high_prec_t integral2 { myTrapSum(realPart2, dx, numThreads) };
+      high_prec_t integral2c { myTrapSum(complexPart2, dx, numThreads) };
+      if (integral2c>1e-10){
+        std::cout << "Complex part of integral2: " << integral2c << "\n";
+      }
+
+      totalResult += 2*(integral2)/sN(myParams.freqGW);
+    }; */
 
 /*
 
@@ -500,8 +514,8 @@ std::vector<high_prec_t> Binary::FisherElement(params& myParams, ParameterVariab
 
     //error handling
     if (status1==GSL_EROUND || status2==GSL_EROUND){
-      std::cout << "Round off error detected. \n result1 = " << result1 << "  result2 = " << result2 << "  error1 = " << error1 << "  error2 = " << error2 << "  relative error1 = " << error1/result1 << "  relative error2 = " << error2/result2 << std::endl;
-      std::cout << " parameter variables: (" << paramVarToString(var1) << ", " << paramVarToString(var2) << ") \nContinuing program..." << std::endl;
+      std::cout << "Round off error detected. \n result1 = " << result1 << "  result2 = " << result2 << "  error1 = " << error1 << "  error2 = " << error2 << "  relative error1 = " << error1/result1 << "  relative error2 = " << error2/result2 << "\n";
+      std::cout << " parameter variables: (" << paramVarToString(var1) << ", " << paramVarToString(var2) << ") \nContinuing program..." << "\n";
     }
 
   } else if (myParams.mission=="IceGiant"){
@@ -519,8 +533,8 @@ std::vector<high_prec_t> Binary::FisherElement(params& myParams, ParameterVariab
 
     //error handling
     if (status1==GSL_EROUND){
-      std::cout << "Round off error detected. \n result = " << result1 << "  error = " << error1 << "  relative error1 = " << error1/result1 << std::endl;
-      std::cout << " parameter variables: (" << paramVarToString(var1) << ", " << paramVarToString(var2) << ") \nContinuing program..." << std::endl;
+      std::cout << "Round off error detected. \n result = " << result1 << "  error = " << error1 << "  relative error1 = " << error1/result1 << "\n";
+      std::cout << " parameter variables: (" << paramVarToString(var1) << ", " << paramVarToString(var2) << ") \nContinuing program..." << "\n";
     }
 
   } else {
@@ -565,5 +579,5 @@ std::vector<high_prec_t> Binary::FisherElement(params& myParams, ParameterVariab
       high_prec_t integral1 { myTrapSum(realPart, dx, numThreads) };
       high_prec_t integral1c { myTrapSum(complexPart, dx, numThreads) };
       if (integral1c>1e-10){
-        std::cout << "Complex part of integral: " << integral1c << std::endl;
+        std::cout << "Complex part of integral: " << integral1c << "\n";
       }*/
