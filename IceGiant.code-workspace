@@ -81,7 +81,8 @@
 			"typeindex": "cpp",
 			"strstream": "cpp",
 			"condition_variable": "cpp",
-			"mutex": "cpp"
+			"mutex": "cpp",
+			"variablesparameters.hpp": "c"
 		},
 		"C_Cpp.files.exclude": {
 			"**/.vscode": true,
