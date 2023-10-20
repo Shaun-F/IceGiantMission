@@ -194,7 +194,7 @@ std::vector<high_prec_t> LISA::timedepPatternFunctions(params& params, high_prec
     high_prec_t igDirect = params.ig_direction;
     std::vector<high_prec_t> BPF { cos(thetaSv)*cos(thetaSv)*cos(phiSv - igDirect)*cos(phiSv - igDirect) - sin(phiSv - igDirect)*sin(phiSv - igDirect), 2*cos(thetaSv)*sin(phiSv - igDirect)*cos(phiSv-igDirect)};
     std::vector<high_prec_t> result { BPF[0]*cos(2*psiSv) - BPF[1]*sin(2*psiSv),
-                                 BPF[0]*sin(2*psiSv) + BPF[1]*cos(2*psiSv)   };
+                                 BPF[0]*sin(2*psiSv) + BPF[1]*cos(2*psiSv)   };      
     return result;
   } else {
     assert(("Mission parameter not known. ", false));

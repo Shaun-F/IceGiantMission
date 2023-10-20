@@ -52,7 +52,6 @@ struct params{ //struct containing parameters for specific system
   high_prec_t chirpMass{};
   high_prec_t f1{};
   high_prec_t K{};
-  high_prec_t a0{};
   high_prec_t ig_direction{};
   high_prec_t LineOfSightAngle{};
   high_prec_t lightTwoWayTime{}; //two way light travel time for doppler mission

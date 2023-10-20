@@ -27,14 +27,6 @@ high_prec_t CosIota(params& params){
   return  cos(params.thetaL) * cos(params.thetaS) + sin(params.thetaL)*sin(params.thetaS)*cos(params.phiL - params.phiS);
 }
 
-high_prec_t phiS(high_prec_t thetaS, high_prec_t phiS, high_prec_t time){
-  //azimuthal angle phi_S of the source in the detector frame
-  high_prec_t numerator { sqrt(3) * cos(thetaS) + sin(thetaS)*cos(Constants::omegaE*time - phiS) };
-  high_prec_t denominator { 2*sin(thetaS) * sin(Constants::omegaE * time - phiS) };
-
-  return atan2(numerator, denominator);
-}
-
 high_prec_t psiS(high_prec_t thetaL, high_prec_t thetaS, high_prec_t phiL, high_prec_t phiS, high_prec_t cosIota, high_prec_t time){
   //polarization angle psi_S of wavefront in detector frame
   high_prec_t val {sqrt(3)/2};
@@ -100,7 +92,7 @@ high_prec_t Power(high_prec_t x, high_prec_t y){
   return pow(x,y);
 }
 high_prec_t ArcTan(high_prec_t x, high_prec_t y){
-  return atan2(x,y);
+  return atan2(y,x);
 }
 high_prec_t ArcTan(high_prec_t x){
   return atan(x);

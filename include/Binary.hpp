@@ -40,6 +40,11 @@ public:
   high_prec_t freqDerivInt(params&, ParameterVariables, high_prec_t);
   high_prec_t dStrain(params&, ParameterVariables, high_prec_t);
 
+  high_prec_t dhdthetaS(params&, high_prec_t);
+  high_prec_t dhdthetaL(params&, high_prec_t);
+  high_prec_t dhdphiS(params&, high_prec_t);
+  high_prec_t dhdphiL(params&, high_prec_t);
+
 
   //doppler mission specific functions
   high_prec_t lineOfSightAngle(params&);
@@ -57,9 +62,6 @@ public:
 
   #endif //COMPILE_AS_PROGRAM
 
-
 };
-
-
 
 #endif //BINARY_H_INCLUDED

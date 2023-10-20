@@ -14,8 +14,36 @@ using namespace std;
 bool isClose(high_prec_t a, high_prec_t b, high_prec_t rel_tol = 1e-4, high_prec_t abs_tol = 0.0);
 
 high_prec_t cosThetaS(high_prec_t,high_prec_t,high_prec_t);
+
+template <typename T>
+T thetaS(T thetaS, T phiS, T time){
+  T costheta { cosThetaS(thetaS, phiS, time) };
+  return std::acos(costheta);
+}
+
+template <typename T>
+T thetaS(params& myParams, T time){
+  T costheta { cosThetaS(myParams.thetaS, myParams.phiS, time) };
+  return std::acos(costheta);
+}
+
 high_prec_t CosIota(params&);
-high_prec_t phiS(high_prec_t,high_prec_t,high_prec_t);
+
+
+template <typename T>
+auto phiS(T thetaS, T phiS, T time){
+  //azimuthal angle phi_S of the source in the detector frame
+  T numerator { sqrt(3) * cos(thetaS) + sin(thetaS)*cos(Constants::omegaE*time - phiS) };
+  T denominator { 2*sin(thetaS) * sin(Constants::omegaE * time - phiS) };
+
+  return Constants::omegaE*time + atan2(numerator, denominator);
+}
+
+template <typename T>
+auto phiS(params& myParams, T time){
+  return phiS(myParams.thetaS, myParams.phiS, time);
+}
+
 high_prec_t psiS(high_prec_t, high_prec_t, high_prec_t, high_prec_t, high_prec_t, high_prec_t);
 high_prec_t psiS(params&, high_prec_t);
 

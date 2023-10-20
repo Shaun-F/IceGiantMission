@@ -1,9 +1,12 @@
 #ifndef CONSTANTS_H_INCLUDED
 #define CONSTANTS_H_INCLUDED
+#define _USE_MATH_DEFINES
+
+#include <math.h>
 
 using Constant=double;
 namespace Constants{
-  inline constexpr Constant PI {3.141592653589793}; //PI
+  inline constexpr Constant PI {M_PI}; //PI
   inline constexpr Constant AU {149597870700.0}; //AU's to meters
   inline constexpr Constant pc {3.085677581491367e+16};//parsec to meters
   inline constexpr Constant yr {60*60*24*365.25}; //seconds in year

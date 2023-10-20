@@ -14,16 +14,17 @@ using namespace std;
 Binary::Binary(params& params): m_paramStruct(params), LISA(params.Tobs, params.Larm, params.NC){
   m_chirpMass = pow( params.M1 * params.M2, 3./5. ) / pow( params.M1 + params.M2 , 1./5. );
   m_f1 = 96./5. * pow(Constants::PI, 8./3.) * pow( params.freqGW , 11./3.) * pow(Constants::Gnewt * m_chirpMass/pow(Constants::C,3.), 5./3.);
+  high_prec_t gravAmplitude { (4.0/params.sourceDistance) * pow(Constants::Gnewt*m_chirpMass / (pow(Constants::C,2)), 5./3.) * pow( Constants::PI*params.freqGW/Constants::C, 2./3.) };
+
 
   params.chirpMass = m_chirpMass;
   params.f1 = m_f1;
-  params.a0 = m_a0;
+  params.gravAmplitude = gravAmplitude;
 }
 
 std::vector<high_prec_t> Binary::GWAmplitudes(params& params){
   //!!!!!!!!!!!!!!!! second element should be negative
-  high_prec_t preFactor { (4.0/params.sourceDistance) * pow(Constants::Gnewt*params.chirpMass / (pow(Constants::C,2)), 5./3.) * pow( Constants::PI*params.freqGW/Constants::C, 2./3.) };
-  return {preFactor * (1. + CosIota(params)*CosIota(params))/2., -preFactor*CosIota(params)};
+  return {params.gravAmplitude * (1. + CosIota(params)*CosIota(params))/2., -params.gravAmplitude *CosIota(params)};
 }
 
 high_prec_t Binary::FrequencyK(params& params){
@@ -61,13 +62,18 @@ high_prec_t Binary::dopplerPhase(params& params, high_prec_t time){
 
 high_prec_t Binary::phase(params& params, high_prec_t time){
   //analytic integral from 0 to t of GW frequency
-  high_prec_t freq = gwFrequency(params,time);
-  high_prec_t T1 { 2*time*(2*freq + params.f1*time) };
-  high_prec_t T2 {  params.f1 * params.P * cos(params.phiP) };
-  high_prec_t T3 { -params.f1 * params.P * cos(2.*Constants::PI*time/params.P + params.phiP) };
-  high_prec_t T4 { 2 * freq * Constants::PI * sin(params.phiP) };
-  high_prec_t T5 { -2*Constants::PI * (freq + params.f1*time) *sin(2.*Constants::PI*time/params.P + params.phiP) };
-  return 1./4. * (T1 + (FrequencyK(params) * params.P)/pow(Constants::PI, 2) * (T2 + T3 + T4 + T5));
+  high_prec_t f0 = params.freqGW;
+  high_prec_t f1 = params.f1;
+  high_prec_t P = params.P;
+  high_prec_t phiP = params.phiP;
+
+  high_prec_t T1 { 2*time*(2*f0 + f1*time) };
+  high_prec_t T2 {  f1 * P * cos(phiP) };
+  high_prec_t T3 { -f1 * P * cos(2.*Constants::PI*time/P + phiP) };
+  high_prec_t T4 { 2 * f0 * Constants::PI * sin(phiP) };
+  high_prec_t T5 { -2*Constants::PI * (f0 + f1*time) *sin(2.*Constants::PI*time/P + phiP) };
+
+  return 1./4. * (T1 + (FrequencyK(params) * P)/pow(Constants::PI, 2.) * (T2 + T3 + T4 + T5));
 
 }
 
@@ -79,7 +85,7 @@ high_prec_t Binary::lineOfSightAngle(params& params){
 
 high_prec_t Binary::detectorStrain(params& params, high_prec_t time){
   assert(params.mission=="IceGiant");
-  return Amplitude(params,time)*cos(2*Constants::PI*phase(params,time) + polarizationPhase(params,time));
+  return Amplitude(params,time)*cos(2.0*Constants::PI*phase(params,time) + polarizationPhase(params,time));
 }
 
 high_prec_t Binary::strain(params& params, high_prec_t time){
@@ -87,7 +93,10 @@ high_prec_t Binary::strain(params& params, high_prec_t time){
   if (params.mission=="LISA"){
     return val*Amplitude(params, time)*cos(2.*Constants::PI*phase(params, time) + polarizationPhase(params, time) + dopplerPhase(params, time));
   } else if (params.mission == "IceGiant") {
-    return (lineOfSightAngle(params)-1)/2 * psiBar(params,time) - lineOfSightAngle(params)*psiBar(params,time-(1+lineOfSightAngle(params))/2 * params.lightTwoWayTime) + (1+lineOfSightAngle(params))/2*psiBar(params,time-params.lightTwoWayTime);
+    high_prec_t psiBar1 { psiBar(params,time) };
+    high_prec_t psiBar2 { psiBar(params,time-(1+lineOfSightAngle(params))/2 * params.lightTwoWayTime)  };
+    high_prec_t psiBar3 { psiBar(params,time-params.lightTwoWayTime) };
+    return (lineOfSightAngle(params)-1)/2 * psiBar1 - lineOfSightAngle(params)*psiBar2+ (1+lineOfSightAngle(params))/2*psiBar3;
   };
   return 0.;
 }
@@ -176,52 +185,20 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
       };
       break;
     case ParameterVariables::thetaS:
-      { //create scope to hold temporary param copy
-      params myTempParams { myParams }; //create local copy of params
-      int DerivativeDirection {1};
-      if(myParams.thetaS+myParams.DerivativeDelta>Constants::PI){
-        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
-      };
-      myTempParams.thetaS += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
-      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
-      } //end of temporary scope
+      result = dhdthetaS(myParams, time);
       break;
     case ParameterVariables::thetaL:
-      { //create scope to hold temporary param copy
-      params myTempParams = myParams; //create local copy of params
-      int DerivativeDirection {1};
-      if(myParams.thetaL+myParams.DerivativeDelta>Constants::PI){
-        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
-      };
-      myTempParams.thetaL += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
-      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
-      } //end of temporary scope
+      result = dhdthetaL(myParams, time);
       break;
     case ParameterVariables::phiS:
-      { //create scope to hold temporary param copy
-      params myTempParams = myParams; //create local copy of params
-      int DerivativeDirection {1};
-      if(myParams.phiS+myParams.DerivativeDelta>Constants::PI){
-        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
-      };
-      myTempParams.phiS += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
-      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
-      } //end of temporary scope
+      result = dhdphiS(myParams, time);
       break;
     case ParameterVariables::phiL:
-      { //create scope to hold temporary param copy
-      params myTempParams = myParams; //create local copy of params
-      int DerivativeDirection {1};
-      if(myParams.phiL+myParams.DerivativeDelta>Constants::PI){
-        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
-      };
-      myTempParams.phiL += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
-      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
-      } //end of temporary scope
+      result = dhdphiL(myParams, time);
       break;
     case ParameterVariables::lnA:
       result = strain(myParams, time);
-      break;
+      break; 
     default:
       std::cout << "ERROR in dStrain. Specified variable not recognized." <<"\n";
       break;
@@ -581,3 +558,69 @@ std::vector<high_prec_t> Binary::FisherElement(params& myParams, ParameterVariab
       if (integral1c>1e-10){
         std::cout << "Complex part of integral: " << integral1c << "\n";
       }*/
+
+
+
+
+      /* case ParameterVariables::thetaS:
+      { //create scope to hold temporary param copy
+      params myTempParams { myParams }; //create local copy of params
+      int DerivativeDirection {1};
+      if(myParams.thetaS+myParams.DerivativeDelta>Constants::PI){
+        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+      };
+      myTempParams.thetaS += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      } //end of temporary scope
+      break;
+    case ParameterVariables::thetaL:
+      { //create scope to hold temporary param copy
+      params myTempParams = myParams; //create local copy of params
+      int DerivativeDirection {1};
+      if(myParams.thetaL+myParams.DerivativeDelta>Constants::PI){
+        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+      };
+      myTempParams.thetaL += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      } //end of temporary scope
+      break;
+    case ParameterVariables::phiS:
+      { //create scope to hold temporary param copy
+      params myTempParams = myParams; //create local copy of params
+      int DerivativeDirection {1};
+      if(myParams.phiS+myParams.DerivativeDelta>Constants::PI){
+        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+      };
+      myTempParams.phiS += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      } //end of temporary scope
+      break;
+    case ParameterVariables::phiL:
+      { //create scope to hold temporary param copy
+      params myTempParams = myParams; //create local copy of params
+      int DerivativeDirection {1};
+      if(myParams.phiL+myParams.DerivativeDelta>Constants::PI){
+        DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+      };
+      myTempParams.phiL += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+      result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      } //end of temporary scope
+      break; */
+
+
+      /* 
+    case ParameterVariables::thetaS:
+      result = dhdthetaS(myParams, t);
+      break;
+    case ParameterVariables::thetaL:
+      result = dhdthetaL(myParams, t);
+      break;
+    case ParameterVariables::phiS:
+      result = dhdphiS(myParams, t);
+      break;
+    case ParameterVariables::phiL:
+      result = dhdphiL(myParams, t);
+      break;
+    case ParameterVariables::lnA:
+      result = strain(myParams, time);
+      break; */
