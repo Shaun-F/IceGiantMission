@@ -148,7 +148,7 @@ void executeAnalysis(params& myParams, Binary& myBinary, json& jobj){
 									(double)myParams.phiS, 
 									(double)myParams.thetaL, 
 									(double)myParams.phiL, 
-									(double)myParams.a0, 
+									(double)myParams.gravAmplitude, 
 									(double)myParams.f1, 
 									(double)myParams.freqGW
 									};
@@ -207,7 +207,7 @@ void combineInformation(params& myParams, analysisParams& AnalysisParams, Binary
 									(double)myParams.phiS, 
 									(double)myParams.thetaL, 
 									(double)myParams.phiL, 
-									(double)myParams.a0, 
+									(double)myParams.gravAmplitude, 
 									(double)myParams.f1, 
 									(double)myParams.freqGW
 									};	
