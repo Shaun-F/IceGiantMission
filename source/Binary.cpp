@@ -185,16 +185,60 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
       };
       break;
     case ParameterVariables::thetaS:
-      result = dhdthetaS(myParams, time);
+      if (myParams.AnalyticDerivatives){
+        result = dhdthetaS(myParams, time); //analytic expression for derivative
+      } else {
+        std::cout << "Using numerical derivatives" << std::endl;
+        params myTempParams { myParams }; //create local copy of params
+        int DerivativeDirection {1};
+        if(myParams.thetaS+myParams.DerivativeDelta>Constants::PI){
+          DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+        };
+        myTempParams.thetaS += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+        result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      };
       break;
     case ParameterVariables::thetaL:
-      result = dhdthetaL(myParams, time);
+      if (myParams.AnalyticDerivatives){
+        result = dhdthetaL(myParams, time); //analytic expression for derivative
+      } else {
+        std::cout << "Using numerical derivatives" << std::endl;
+        params myTempParams = myParams; //create local copy of params
+        int DerivativeDirection {1};
+        if(myParams.thetaL+myParams.DerivativeDelta>Constants::PI){
+          DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+        };
+        myTempParams.thetaL += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+        result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      };
       break;
     case ParameterVariables::phiS:
-      result = dhdphiS(myParams, time);
+      if (myParams.AnalyticDerivatives){
+        result = dhdphiS(myParams, time);
+      } else {
+        std::cout << "Using numerical derivatives" << std::endl;
+        params myTempParams = myParams; //create local copy of params
+        int DerivativeDirection {1};
+        if(myParams.phiS+myParams.DerivativeDelta>Constants::PI){
+          DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+        };
+        myTempParams.phiS += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+        result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      };
       break;
     case ParameterVariables::phiL:
-      result = dhdphiL(myParams, time);
+      if (myParams.AnalyticDerivatives){
+        result = dhdphiL(myParams, time);
+      } else {
+        std::cout << "Using numerical derivatives" << std::endl;
+        params myTempParams = myParams; //create local copy of params
+        int DerivativeDirection {1};
+        if(myParams.phiL+myParams.DerivativeDelta>Constants::PI){
+          DerivativeDirection*=-1; //if ThetaS near Pi, change to left sided derivative to prevent undefined behavior
+        };
+        myTempParams.phiL += DerivativeDirection*myParams.DerivativeDelta; //left sided derivative
+        result = (strain(myTempParams,time) - strain(myParams, time))/(DerivativeDirection*myParams.DerivativeDelta);
+      };
       break;
     case ParameterVariables::lnA:
       result = strain(myParams, time);

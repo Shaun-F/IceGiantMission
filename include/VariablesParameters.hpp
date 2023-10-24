@@ -61,9 +61,11 @@ struct params{ //struct containing parameters for specific system
   int periodSamples{35};
   int NC{2};
   int LISAAlpha{0};  //denotes which beam pattern function were looking at (1, 2, or 3(both))
+  int AnalyticDerivatives{1}; // 1: use analytic expressions for positional variable derivatives, 0: use numerical derivatives
   char mode{'s'};
   std::vector<high_prec_t> gwAmplitude{};
   std::string mission{"LISA"}; //options: ["LISA", "IceGiant"] do we look at the LISA mission or Ice Giant mission
+
 
 };
 

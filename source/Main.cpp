@@ -249,30 +249,31 @@ void getParameters(params& out, const std::string_view fileName){
 	boost::property_tree::ptree pt; //property tree object
 	boost::property_tree::ini_parser::read_ini(dataPath, pt); //parse the ini file
 
-	out.mission			= pt.get("parameters.mission", "LISA");
-	out.thetaL 			= pt.get("parameters.thetaL", 0.);
-	out.phiL			= pt.get("parameters.phiL", 0.);
-	out.thetaS 			= pt.get("parameters.thetaS", 0.);
-	out.phiS			= pt.get("parameters.phiS", 0.);
-	out.LISAAlpha		= pt.get("parameters.LISAAlpha", 2);	
-	out.M1				= pt.get("parameters.M1", 0.);
-	out.M2				= pt.get("parameters.M2", 0.);
-	out.MP				= pt.get("parameters.MP", 0.);
-	out.Tobs			= pt.get("parameters.Tobs", 4.0*Constants::yr);
-	out.Larm			= pt.get("parameters.Larm", 2.5e9);
-	out.NC				= pt.get("parameters.NC", 2);
-	out.thetaP			= pt.get("parameters.thetaP", 0.);
-	out.phiP			= pt.get("parameters.phiP", 0.);
-	out.mode			= pt.get("parameters.mode", "s")[1];
-	out.freqGW			= pt.get("parameters.freqGW", 0.);
-	out.sourceDistance	= pt.get("parameters.sourceDistance", 0.);
-	out.DerivativeDelta	= pt.get("parameters.DerivativeDelta", 1e-6);
-	out.ig_direction	= pt.get("parameters.ig_direction", 0.);
-	out.lightTwoWayTime	= pt.get("parameters.lightTwoWayTime", 15000);
-	out.periodSamples	= pt.get("parameters.periodSamples", 35);	
-	out.PSDlevel		= pt.get("parameters.PSDlevel", 9e-26);
-	out.allanDeviation	= pt.get("parameters.allanDeviation", 3e-15);
-	out.relativeSNR		= pt.get("parameters.relativeSNR", 1e-1);
+	out.mission				= pt.get("parameters.mission", "LISA");
+	out.thetaL 				= pt.get("parameters.thetaL", 0.);
+	out.phiL				= pt.get("parameters.phiL", 0.);
+	out.thetaS 				= pt.get("parameters.thetaS", 0.);
+	out.phiS				= pt.get("parameters.phiS", 0.);
+	out.LISAAlpha			= pt.get("parameters.LISAAlpha", 2);	
+	out.M1					= pt.get("parameters.M1", 0.);
+	out.M2					= pt.get("parameters.M2", 0.);
+	out.MP					= pt.get("parameters.MP", 0.);
+	out.Tobs				= pt.get("parameters.Tobs", 4.0*Constants::yr);
+	out.Larm				= pt.get("parameters.Larm", 2.5e9);
+	out.NC					= pt.get("parameters.NC", 2);
+	out.thetaP				= pt.get("parameters.thetaP", 0.);
+	out.phiP				= pt.get("parameters.phiP", 0.);
+	out.mode				= pt.get("parameters.mode", "s")[1];
+	out.freqGW				= pt.get("parameters.freqGW", 0.);
+	out.sourceDistance		= pt.get("parameters.sourceDistance", 0.);
+	out.DerivativeDelta		= pt.get("parameters.DerivativeDelta", 1e-6);
+	out.ig_direction		= pt.get("parameters.ig_direction", 0.);
+	out.lightTwoWayTime		= pt.get("parameters.lightTwoWayTime", 15000);
+	out.periodSamples		= pt.get("parameters.periodSamples", 35);	
+	out.PSDlevel			= pt.get("parameters.PSDlevel", 9e-26);
+	out.allanDeviation		= pt.get("parameters.allanDeviation", 3e-15);
+	out.relativeSNR			= pt.get("parameters.relativeSNR", 1e-1);
+	out.AnalyticDerivatives = pt.get("parameters.AnalyticDerivatives", 1);
 
 }
 
