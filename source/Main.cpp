@@ -315,7 +315,8 @@ void printParameters(const params& myParams){
 						"\nig_direction: " + std::to_string(myParams.ig_direction) + 
 						"\nlightTwoWayTime: " + std::to_string(myParams.lightTwoWayTime) +
 						"\nperiodSamples: " + std::to_string(myParams.periodSamples) 	+
-						"\nrelativeSNR: " + std::to_string(myParams.relativeSNR)
+						"\nrelativeSNR: " + std::to_string(myParams.relativeSNR) + 
+						"\nAnalyticDerivatives: " + std::to_string(myParams.AnalyticDerivatives)
 					};
 
 	std::cout << header + header + header << out << "\n" <<footer + footer + footer << std::endl;
