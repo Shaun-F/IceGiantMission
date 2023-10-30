@@ -188,7 +188,6 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
       if (myParams.AnalyticDerivatives){
         result = dhdthetaS(myParams, time); //analytic expression for derivative
       } else {
-        std::cout << "Using numerical derivatives" << std::endl;
         params myTempParams { myParams }; //create local copy of params
         int DerivativeDirection {1};
         if(myParams.thetaS+myParams.DerivativeDelta>Constants::PI){
@@ -202,7 +201,6 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
       if (myParams.AnalyticDerivatives){
         result = dhdthetaL(myParams, time); //analytic expression for derivative
       } else {
-        std::cout << "Using numerical derivatives" << std::endl;
         params myTempParams = myParams; //create local copy of params
         int DerivativeDirection {1};
         if(myParams.thetaL+myParams.DerivativeDelta>Constants::PI){
@@ -216,7 +214,6 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
       if (myParams.AnalyticDerivatives){
         result = dhdphiS(myParams, time);
       } else {
-        std::cout << "Using numerical derivatives" << std::endl;
         params myTempParams = myParams; //create local copy of params
         int DerivativeDirection {1};
         if(myParams.phiS+myParams.DerivativeDelta>Constants::PI){
@@ -230,7 +227,6 @@ high_prec_t Binary::dStrain(params& myParams, ParameterVariables var, high_prec_
       if (myParams.AnalyticDerivatives){
         result = dhdphiL(myParams, time);
       } else {
-        std::cout << "Using numerical derivatives" << std::endl;
         params myTempParams = myParams; //create local copy of params
         int DerivativeDirection {1};
         if(myParams.phiL+myParams.DerivativeDelta>Constants::PI){
