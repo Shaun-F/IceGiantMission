@@ -346,7 +346,7 @@ void Binary::genFisherMatrix(params& myParams, FisherMatrix& out, high_prec_t &L
 
 	omp_set_nested(true); //allow nested parallelism. Important for parallelizing the individual integrations too
   #pragma omp parallel for num_threads(numThreads) collapse(2)
-  for(unsigned int i=0; i<out.Rows; ++i){
+  for (unsigned int i=0; i<out.Rows; ++i){
     for (unsigned int j=i; j<out.Cols; ++j){
       std::string printString { "Calculating Fisher matrix element for parameters [" + paramVarToString(static_cast<ParameterVariables>(i)) + ", " + paramVarToString(static_cast<ParameterVariables>(j)) + "].\n" };
       std::cout << printString;
